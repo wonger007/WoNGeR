@@ -6,16 +6,15 @@
 <#
 .SYNOPSIS
 
-Clone one ore more VMware ESXi VMs from a 'template' VM
+Clone one ore more VMware vCenter VMs from a Template
 
 .DESCRIPTION
 
-Since ESXi without vCenter does not have templates and therefore a cloning mechanism built in, this script mimics this by allowing existing VMs to
-be treated as templates and this script will create one or more new VMs with the same specification as the chosen template and copy its hard disks.
+Clone a Template multiple times via GUI within an vCenter environment.
 
 .PARAMETER esxihost
 
-The name or IP address of the ESXi host to use. Credentials will be prompted for if saved ones are not available
+The name or IP address of the vCenter host to use.
 
 .PARAMETER templateName
 
@@ -33,14 +32,6 @@ The name of the VM to create. If creating more than one, it must contain %d whic
 
 The name of the snapshot to use when creating a linked clone. Specifying this automatically enables the linked clone disk feature
 
-.PARAMETER noGUI
-
-Do not show the user interface and go straight to cloning the VM using the supplied command line parameters
-
-.PARAMETER linkedClone
-
-Ticks the box in the GUI to enable linked clones
-
 .PARAMETER count
 
 The number of clones to create
@@ -53,45 +44,17 @@ The number to start the cloning naming from.
 
 Notes to assign to the created VM(s)
 
-.PARAMETER protect
-
-Edit the parent disk(s) of linked clones to protect them such that they are not deleted when the linked clone is deleted
-
 .PARAMETER powerOn
 
 Power on the VM(s) once creation is complete
-
-.PARAMETER noConnect
-
-Do not automatically connect to ESXi
 
 .PARAMETER disconnect
 
 Disconnect from ESXi before exit
 
-.PARAMETER numCpus
-
-Override the number of CPUs defined in the template with the number specified here
-
-.PARAMETER numCores
-
-Override the number of cores per CPU defined in the template with the number specified here
-
-.PARAMETER MB
-
-Override the allocated memory defined in the template with the number specified here in MB
-
-.PARAMETER waitToExit
-
-Requires the <enter> key to be pressed before the script exits
-
 .PARAMETER maxVmdkDescriptorSize
 
-If the vmdk file exceeds this size then the script will not attempt to edt it because it is probably a binary file and not a text descriptor
-
-.PARAMETER configRegKey
-
-The registry key used to store the ESXi host and template name to save having to enter them every time
+If the vmdk file exceeds this size then the script will not attempt to edit it because it is probably a binary file and not a text descriptor
 
 .EXAMPLE
 
@@ -99,18 +62,8 @@ The registry key used to store the ESXi host and template name to save having to
 
 Run the user interface which will require various fields to be completed and when "OK" is clicked, create VMs as per these fields
 
-.EXAMPLE
-
-& '.\ESXi cloner.ps1' -noGUI -templateName 'Server 2016 Sysprep' -dataStore 'Datastore1' -vmName 'GRL-2016-%d' -count 4 -notes "Guy's for product testing" -snapshot 'Linked Clone' -poweron
-
-Do not show a user interface and go straight to creating four VMs from the given template name in the datastore1 datastore, creating linked clone (delta) disks from the 
-snapshot if the "Server 2016 Sysprep" VM called "Linked Clone". Power each one on once its creation is complete.
-
 .NOTES
-
-Credentials for ESXi can be stored by running "Connect-VIServer -Server <esxi> -User <username> -Password <password> -SaveCredentials
-
-Username and password can also be specified via %esxiusername% and %esxipassword% environment variables respectively
+Thanks to guyrleech @ https://github.com/guyrleech
 
 #>
 
@@ -128,20 +81,11 @@ Param
     [int]$startFrom = 1 ,
     [string]$notes ,
     [switch]$powerOn ,
-    [switch]$noConnect ,
     [switch]$disconnect ,
-    [switch]$linkedClone ,
     [string]$username ,
     [string]$password ,
-    [switch]$protect ,
-    ## Parameters to override what comes from template
-    [int]$numCpus ,
-    [int]$numCores ,
-    [int]$MB ,
-    [switch]$waitToExit ,
     ## it is advised not to use the following parameters
-    [int]$maxVmdkDescriptorSize = 10KB ,
-    [string]$configRegKey = 'HKCU:\Software\Guy Leech\ESXi Cloner' 
+    [int]$maxVmdkDescriptorSize = 10KB
 )
 
 ## Adding so we can make it app modal as well as system
